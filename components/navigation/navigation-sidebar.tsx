@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
+import { UserButton } from "@clerk/nextjs";
 
 import { currentProfile } from "@/lib/current-profile";
 import { db } from "@/lib/db";
 
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
 import NavigationAction from "./navigation-action";
 import { NavigationItem } from "./navigation-item";
+import { ModeToggle } from "@/components/mode-toggle";
 
 const NavigationSideBar = async () => {
   const profile = await currentProfile();
@@ -41,6 +42,17 @@ const NavigationSideBar = async () => {
           </div>
         ))}
       </ScrollArea>
+      <div className="pb-3 mt-auto flex items-center flex-col gap-y-4">
+        <ModeToggle />
+        <UserButton
+          afterSignOutUrl="/"
+          appearance={{
+            elements: {
+              avatarBox: "h-[48px] w-[48px]",
+            },
+          }}
+        />
+      </div>
     </div>
   );
 };

@@ -27,7 +27,7 @@ model Server {
   id         String @id @default(uuid())
   name       String
   imageUrl   String @db.Text
-  inviteCode String @db.Text
+  inviteCode String @unique
 
   members  Member[]
   channels Channel[]
@@ -66,7 +66,7 @@ model Member {
 
 enum ChannelType {
   TEXT
-  AUDO
+  AUDIO
   VIDEO
 }
 

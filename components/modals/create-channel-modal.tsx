@@ -34,6 +34,7 @@ import {
 
 import { useModal } from "@/hooks/use-modal-store";
 import { ChannelType } from "@prisma/client";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   name: z
@@ -51,7 +52,7 @@ export const CreateChannelModal = () => {
   const router = useRouter();
   const params = useParams();
   const { type, isOpen, onClose, data } = useModal();
-  console.log(params);
+  const { channelType } = data;
 
   const isModalOpen = isOpen && type === "createChannel";
 
@@ -59,7 +60,7 @@ export const CreateChannelModal = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      type: ChannelType.TEXT,
+      type: channelType || ChannelType.TEXT,
     },
   });
 
@@ -72,7 +73,7 @@ export const CreateChannelModal = () => {
           serverId: params?.serverId,
         },
       });
-      console.log("url")
+      console.log("url");
       await axios.post(url, values);
       form.reset();
       router.refresh();
@@ -86,6 +87,14 @@ export const CreateChannelModal = () => {
     form.reset();
     onClose();
   };
+
+  useEffect(() => {
+    if (channelType) {
+      form.setValue("type", channelType);
+    } else {
+      form.setValue("type", ChannelType.TEXT);
+    }
+  }, [channelType, form]);
 
   return (
     <Dialog open={isModalOpen} onOpenChange={handleClose}>

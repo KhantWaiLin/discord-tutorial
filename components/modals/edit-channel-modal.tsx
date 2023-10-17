@@ -25,7 +25,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-
 import { useModal } from "@/hooks/use-modal-store";
 import { useEffect } from "react";
 import { ChannelType } from "@prisma/client";
@@ -47,7 +46,7 @@ const formSchema = z.object({
 export const EditChannelModal = () => {
   const router = useRouter();
   const { type, isOpen, onClose, data } = useModal();
-  const { server, channel, channelType } = data;
+  const { server, channel } = data;
 
   const isModalOpen = isOpen && type === "editChannel";
 
@@ -55,7 +54,7 @@ export const EditChannelModal = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      type: channelType || ChannelType.TEXT,
+      type: channel?.type ?? ChannelType.TEXT,
     },
   });
 
@@ -134,7 +133,7 @@ export const EditChannelModal = () => {
                       <FormControl>
                         <SelectTrigger
                           className="bg-zinc-300/50 border-0 foucs:ring-0 text-black ring-offset-0
-                          focus:ring-offset-0 outline-none "
+                          focus:ring-offset-0 outline-none capitalize"
                         >
                           <SelectValue placeholder="Select a channel type"></SelectValue>
                         </SelectTrigger>

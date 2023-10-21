@@ -1,5 +1,6 @@
 import { ChatHeader } from "@/components/chat/chat-header";
 import { ChantInput } from "@/components/chat/chat-input";
+import { ChatMessages } from "@/components/chat/chat-messages";
 
 import { currentProfile } from "@/lib/current-profile";
 import { db } from "@/lib/db";
@@ -45,7 +46,20 @@ const ChannelIdPage = async ({ params }: ChannelIdPageProps) => {
         name={channel?.name}
         serverId={params?.serverId}
       />
-      <div className="flex-1">Future Message</div>
+      <ChatMessages
+        member={member}
+        name={channel.name}
+        chatId={channel.id}
+        type="channel"
+        apiUrl="/api/messages"
+        socketUrl="/api/socket/messages"
+        socketQuery={{
+          channelId: channel?.id,
+          serverId: channel.serverId,
+        }}
+        paramKey="channelId"
+        paramValue={channel.id}
+      />
       <ChantInput
         name={channel.name}
         type="channel"

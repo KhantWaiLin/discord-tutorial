@@ -1,14 +1,17 @@
 "use client";
 
 import { Member, MemberRole, Profile } from "@prisma/client";
-import { ActionToolTip } from "../action-tooltip";
+import { ActionToolTip } from "@/components/action-tooltip";
 import { Edit, FileIcon, Shield, ShieldAlert, Trash } from "lucide-react";
+
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import * as z from "zod";
 import axios from "axios";
+import qs from "query-string";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useParams, useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
@@ -16,6 +19,7 @@ import UserAvatar from "@/components/user-avatar";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useModal } from "@/hooks/use-modal-store";
 
 interface ChatItemProps {
   id: string;
@@ -55,7 +59,7 @@ export const ChatItem = ({
   socketQuery,
 }: ChatItemProps) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const { onOpen } = useModal();
 
   const fileType = fileUrl?.split(".").pop();
 
@@ -67,6 +71,8 @@ export const ChatItem = ({
   const canEditMessage = !deleted && isOwner && !fileUrl;
   const isPDF = fileType === "pdf" && fileUrl;
   const isImage = !isPDF && fileUrl;
+  const params = useParams();
+  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -75,8 +81,28 @@ export const ChatItem = ({
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
+  const onMemberClick = () => {
+    if (member.id === currentMember?.id) {
+      return;
+    }
+    router.push(`/servers/${params?.serverId}/conversations/${member.id}`);
+  };
+
+  const isLoading = form.formState.isSubmitting;
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      const url = qs.stringifyUrl({
+        url: `${socketUrl}/${id}`,
+        query: socketQuery,
+      });
+
+      await axios.patch(url, values);
+      form.reset();
+      setIsEditing(false);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   useEffect(() => {
@@ -85,16 +111,34 @@ export const ChatItem = ({
     });
   }, [content]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: any) => {
+      if (event.key === "Escape" || event.keyCode === 27) {
+        setIsEditing(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keyDown", handleKeyDown);
+  }, []);
+
   return (
     <div className="relative flex group items-center hover:bg-black/5 p-4 transition w-full">
       <div className="group flex gap-x-2 items-start w-full">
-        <div className="cursor-pointer hover:drop-shadow-md transition">
+        <div
+          className="cursor-pointer hover:drop-shadow-md transition"
+          onClick={onMemberClick}
+        >
           <UserAvatar src={member.profile.imageUrl} />
         </div>
         <div className="flex flex-col w-full">
           <div className="flex items-center gap-x-2">
             <div className="flex items-center">
-              <p className="font-semibold text-sm hover:underline cursor-pointer">
+              <p
+                className="font-semibold text-sm hover:underline cursor-pointer"
+                onClick={onMemberClick}
+              >
                 {member.profile.name}
               </p>
               <ActionToolTip label={member.role}>
@@ -124,7 +168,7 @@ export const ChatItem = ({
           {isPDF && (
             <div
               className="relative flex items-center flex-2 p-2 mt-2 rounded-md 
-        bg-background/10"
+              bg-background/10"
             >
               <FileIcon className="w-10 h-10 fill-indigo-200 stroke-indigo-400" />
               <a
@@ -167,6 +211,7 @@ export const ChatItem = ({
                       <FormControl>
                         <div className="relative w-full">
                           <Input
+                            disabled={isLoading}
                             className="p-2 bg-zinc-200/90 dark:bg-zinc-700/75 border-none
                             border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-zinc-600
                             dark:text-zinc-200"
@@ -178,7 +223,13 @@ export const ChatItem = ({
                     </FormItem>
                   )}
                 />
+                <Button disabled={isLoading} size="sm" variant="primary">
+                  Save
+                </Button>
               </form>
+              <span className="text-[10px] mt-1 text-zinc-400">
+                Press escape to cancel, enter to save
+              </span>
             </Form>
           )}
         </div>
@@ -199,6 +250,12 @@ export const ChatItem = ({
           )}
           <ActionToolTip label="Delete">
             <Trash
+              onClick={() =>
+                onOpen("deleteMessage", {
+                  apiUrl: `${socketUrl}/${id}`,
+                  query: socketQuery,
+                })
+              }
               className="cursor-pointer ml-auto w-4 h-4 text-zinc-500 hover:text-zinc-600 
                dark:text-zinc-200 transition"
             />
